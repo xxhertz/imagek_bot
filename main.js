@@ -14,6 +14,25 @@ const generateString = (length = 16) => {
     return result
 }
 
+const download = async (url, filename) => {
+	return new Promise((resolve, reject) => {
+		request.get(url)
+			.on('error', reject)
+			.on('response', res => {
+				res.pipe(fs.createWriteStream(`./jobs/${filename}`))
+					.on('finish', resolve)
+			})
+	})
+}
+
+const getImageData = async image => await image.raw().toBuffer({resolveWithObject: true})
+
+const getPixel = (image_buffer, x, y) => {
+	const {width, channels} = image_buffer.info
+	const x_offset = y * width * channels 
+	const start_position = x * channels + x_offset
+	return image_buffer.data.slice(start_position, start_position + channels)
+}
 
 // Require the necessary discord.js classes
 const { Client, Events, GatewayIntentBits, SlashCommandBuilder, REST, Collection, Routes, EmbedBuilder, PermissionFlagsBits, AttachmentBuilder } = require('discord.js')
