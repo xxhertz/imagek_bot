@@ -9,7 +9,8 @@
   "author": "fini",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^14.11.0"
-  },
-  "devDependencies": {}
+    "discord.js": "^14.11.0",
+    "request": "^2.88.2",
+    "sharp": "^0.32.6"
+  }
 }

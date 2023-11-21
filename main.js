@@ -2,6 +2,8 @@ const token = require("./token.json").token
 const clientId = "1176025391262085201"
 const guildId = "1069559738427256842"
 const fs = require("fs")
+const request = require("request")
+const sharp = require("sharp")
 
 const generateString = (length = 16) => {
     let result = ''
