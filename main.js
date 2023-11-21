@@ -89,6 +89,10 @@ const createCommand = (name, description, fn) => {
 	})
 }
 
+createCommand("greyscale", "Removes the color from an image", async (image, jobid) => {
+	return await image.greyscale()
+})
+
 const command_json = []
 
 for (const command of command_list) {
