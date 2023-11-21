@@ -4,20 +4,21 @@ const guildId = "1069559738427256842"
 const fs = require("fs")
 
 const generateString = (length = 16) => {
-    let result = '';
-    const characters = 'abcdef0123456789';
-    const charactersLength = characters.length;
+    let result = ''
+    const characters = 'abcdef0123456789'
+    const charactersLength = characters.length
 	for (let i = 0; i < length; i++)
-		result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    return result;
+		result += characters.charAt(Math.floor(Math.random() * charactersLength))
+    return result
 }
 
 
 // Require the necessary discord.js classes
-const { Client, Events, GatewayIntentBits, SlashCommandBuilder, REST, Collection, Routes, EmbedBuilder, PermissionFlagsBits, Attachment } = require('discord.js');
+const { Client, Events, GatewayIntentBits, SlashCommandBuilder, REST, Collection, Routes, EmbedBuilder, PermissionFlagsBits, AttachmentBuilder } = require('discord.js')
+
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds] })
 
 client.commands = new Collection();
 const command_list = [
@@ -66,9 +67,9 @@ const rest = new REST().setToken(token);
 		const data = await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: command_json })
 		console.log(`Successfully reloaded ${data.length} application (/) commands.`)
 	} catch (error) {
-		console.error(error);
+		console.error(error)
 	}
-})();
+})()
 
 
 client.once(Events.ClientReady, c =>
@@ -76,26 +77,26 @@ client.once(Events.ClientReady, c =>
 )
 
 client.on(Events.InteractionCreate, async interaction => {
-	if (!interaction.isChatInputCommand()) return;
+	if (!interaction.isChatInputCommand()) return
 
-	const command = interaction.client.commands.get(interaction.commandName);
+	const command = interaction.client.commands.get(interaction.commandName)
 
 	if (!command) {
-		console.error(`No command matching ${interaction.commandName} was found.`);
-		return;
+		console.error(`No command matching ${interaction.commandName} was found.`)
+		return
 	}
 
 	try {
-		await command.execute(interaction);
+		await command.execute(interaction)
 	} catch (error) {
-		console.error(error);
+		console.error(error)
 		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true })
 		} else {
-			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true })
 		}
 	}
-});
+})
 
 
-client.login(token);
+client.login(token)
