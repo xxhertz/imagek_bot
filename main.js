@@ -41,36 +41,53 @@ const { Client, Events, GatewayIntentBits, SlashCommandBuilder, REST, Collection
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] })
 
-client.commands = new Collection();
-const command_list = [
-	{
+client.commands = new Collection()
+const command_list = []
+const createCommand = (name, description, fn) => {
+	command_list.push({
 		data: new SlashCommandBuilder()
-			.setName('center')
-			.setDescription('Centers an image')
+			.setName(name)
+			.setDescription(description)
 			.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
 			.addAttachmentOption(option => option
 				.setName("image")
-				.setDescription("The image to center")
+				.setDescription("The image to manipulate")
 				.setRequired(true)
 			),
 		async execute(interaction) {
+			// create a filename
+			const jobid = generateString(32)
+			await interaction.reply(`Working on ${name}-ing your image, job: ${jobid}`)
+			// get image data
 			const image = interaction.options.getAttachment("image")
 			
-			const genned_key = generateString(32)
+			// download image to file
+			await download(image.proxyURL, `${jobid}-input.png`)
 		
-			await interaction.reply({embeds: [
+			// do the image manipulation here and write to output file
+			await (await fn(await sharp(`./jobs/${jobid}-input.png`), jobid)).png().toFile(`./jobs/${jobid}.png`)
+
+			// turn the file into an attachment so it can be sent in the embed
+			const file = new AttachmentBuilder(`./jobs/${jobid}.png`)
+
+			// reply to the interaction with the information and the image
+			await interaction.editReply({embeds: [
 				new EmbedBuilder()
-					.setColor(0xB24AF7)
+					.setColor(0xc7a8ff)
 					.addFields(
-						{ name: 'Key', value: genned_key },
-						{ name: 'Duration', value: `${duration} days` },
+						{ name: 'Job ID:', value: jobid },
 						{ name: 'Created by', value: interaction.user.username },
 					)
+					.setImage(`attachment://${jobid}.png`)
 					.setTimestamp()
-			]})
+			], files: [file]})
+			
+			// cleanup files
+			fs.unlinkSync(`./jobs/${jobid}.png`)
+			fs.unlinkSync(`./jobs/${jobid}-input.png`)
 		}
-	}
-]
+	})
+}
 
 const command_json = []
 
