@@ -111,9 +111,141 @@ createCommand("center", "Centers an image", async image => {
 	})
 })
 
+createCommand("centertrim", "Centers and trims an image to have a symmetrical border", async image => {
+	const image_data = await getImageData(image)
+	const {width, height} = image_data.info
+	
+	const [r, g, b, alpha] = getPixel(image_data, 0, 0)
+
+	const post_trim = image.trim()
+	const trim_data = await getImageData(post_trim)
+
+	const width_diff = width - trim_data.info.width
+	const height_diff = height - trim_data.info.height
+	
+	const larger_number = width_diff >= height_diff ? width_diff : height_diff
+
+	const even_check = larger_number % 2
+
+	return post_trim.extend({
+		top: (larger_number - even_check) / 2,
+		bottom: (larger_number + even_check) / 2,
+		
+		left: (larger_number - even_check) / 2,
+		right: (larger_number + even_check) / 2,
+		
+		background: { r, g, b, alpha }
+	})
+})
+
+createCommand("centertrimaspect", "Centers and trims an image to have a symmetrical border based on the image's aspect ratio", async image => {
+	const image_data = await getImageData(image)
+	const {width, height} = image_data.info
+	const aspect_ratio = width / height
+
+	const [r, g, b, alpha] = getPixel(image_data, 0, 0)
+
+	const post_trim = image.trim()
+	const trim_data = await getImageData(post_trim)
+
+	const width_diff = width - trim_data.info.width
+	const height_diff = height - trim_data.info.height
+	
+	const height_number = width_diff >= height_diff ? width_diff : height_diff
+	const width_number = Math.ceil(height_number * aspect_ratio)
+
+	const even_check = height_number % 2
+	const even_check_2 = width_number % 2
+
+	return post_trim.extend({
+		top: (height_number - even_check) / 2,
+		bottom: (height_number + even_check) / 2,
+		
+		left: (width_number - even_check_2) / 2,
+		right: (width_number + even_check_2) / 2,
+		
+		background: { r, g, b, alpha }
+	})
+})
+
+
+const TWITTER_MIN = 3/4
+const TWITTER_MAX = 5/1
+createCommand("centertwitter", "Centers and trims an image and then expands the border to fit into a twitter preview", async image => {
+	const image_data = await getImageData(image)
+	const {width, height} = image_data.info
+
+	const [r, g, b, alpha] = getPixel(image_data, 0, 0)
+
+	const post_trim = image.trim()
+	const trim_data = await getImageData(post_trim)
+
+	const trimmed_aspect = trim_data.info.width / trim_data.info.height
+
+	let width_compensation = 1
+	let height_compensation = 1
+	if (trimmed_aspect > TWITTER_MAX) {
+		// if width is 1000 and height is 100, width will get truncated to be 5:1 in the preview, and 1000/100 is 10:1
+		// so "height compensation" is 2, which is the amount of height we need to multiply on the final image's height in order to get that 5:1 aspect ratio
+		width_compensation = 1
+		height_compensation = trimmed_aspect / TWITTER_MAX 
+	} else if (trimmed_aspect < TWITTER_MIN) {
+		// if the width is 584 and the height is 817, the height will get truncated to be 3:4 in the preview, and 584 / 817 is .716 (it has to be .75)
+		// so "width compensation" would be 1.0475, being that the width needs to be ~5% larger to compensate
+		width_compensation = TWITTER_MIN / trimmed_aspect
+		height_compensation = 1
+	}
+
+	const width_diff = Math.ceil(width * width_compensation) - trim_data.info.width
+	const height_diff = Math.ceil(height * height_compensation) - trim_data.info.height
+	
+	const even_check = height_diff % 2
+	const even_check_2 = width_diff % 2
+
+	return await post_trim.extend({
+		top: (height_diff - even_check) / 2,
+		bottom: (height_diff + even_check) / 2,
+		
+		left: (width_diff - even_check_2) / 2,
+		right: (width_diff + even_check_2) / 2,
+		
+		background: { r, g, b, alpha }
+	})
 })
 
 createCommand("greyscale", "Removes the color from an image", async image => image.greyscale())
+
+// not great, but showcases the full potential of createCommand
+createCommand("caption", "Captions an image", async (image, interaction) => {
+	const image_data = await getImageData(image)
+	const {width, height} = image_data.info
+	const caption = interaction.options.getString("caption")
+	const font_size = interaction.options.getNumber("font_size") ?? 40
+
+	return image.extend({
+		top: font_size + 40,
+		bottom: 0,
+		
+		left: 0,
+		right: 0,
+		
+		background: { r:255, g:255, b:255, alpha:255 }}).composite([{
+		input: new Buffer.from(`<svg width="${width}" height="${font_size}" viewBox="0 0 ${width} ${font_size + 2}"> <text x="50%" y="50%" text-anchor="middle" dy="${font_size / 2}px" font-size="${font_size}px" fill="#000">${caption}</text> </svg>`),
+		top: 0,
+		left: 0	
+	}])
+}, command_builder => command_builder
+	.addStringOption(option => option
+		.setName("caption")
+		.setDescription("Caption to place on the image")
+		.setRequired(true)
+	)
+	.addNumberOption(option => option
+		.setName("font_size")
+		.setDescription("Font size of the caption")
+		.setRequired(false)
+	)
+)
 
 const command_json = []
 
