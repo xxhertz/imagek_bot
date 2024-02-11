@@ -94,7 +94,7 @@ createCommand("center", "Centers an image", async (image, jobid) => {
 	
 	const [r, g, b, alpha] = getPixel(image_data, 0, 0)
 
-	const post_trim = await image.trim(0.1) // 0 wouldnt work for some reason
+	const post_trim = image.trim()
 	const trim_data = await getImageData(post_trim)
 
 	const width_diff = width - trim_data.info.width
@@ -103,7 +103,7 @@ createCommand("center", "Centers an image", async (image, jobid) => {
 	const even_width = width_diff % 2
 	const even_height = height_diff % 2
 
-	return await post_trim.extend({
+	return post_trim.extend({
 		top: (height_diff - even_height) / 2,
 		bottom: (height_diff + even_height) / 2,
 		
