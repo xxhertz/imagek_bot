@@ -4,23 +4,15 @@ const guildId = GUILDID
 const request = require("request")
 const sharp = require("sharp")
 
-const generateString = (length = 16) => {
-    let result = ''
-    const characters = 'abcdef0123456789'
-    const charactersLength = characters.length
-	for (let i = 0; i < length; i++)
-		result += characters.charAt(Math.floor(Math.random() * charactersLength))
-    return result
-}
 
-const download = async (url, filename) => {
+const download = async url => {
 	return new Promise((resolve, reject) => {
-		request.get(url)
-			.on('error', reject)
-			.on('response', res => {
-				res.pipe(fs.createWriteStream(`./jobs/${filename}`))
-					.on('finish', resolve)
-			})
+		request({url, encoding: null}, (error, response, body) => {
+			if (error)
+				return reject(error)
+
+			return resolve(body)
+		})
 	})
 }
 
@@ -39,56 +31,61 @@ const { Client, Events, GatewayIntentBits, SlashCommandBuilder, REST, Collection
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] })
-
 client.commands = new Collection()
+
 const command_list = []
-const createCommand = (name, description, fn) => {
-	command_list.push({
-		data: new SlashCommandBuilder()
-			.setName(name)
-			.setDescription(description)
-			.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-			.addAttachmentOption(option => option
-				.setName("image")
-				.setDescription("The image to manipulate")
-				.setRequired(true)
-			),
-		async execute(interaction) {
-			// create a filename
-			const jobid = generateString(32)
-			await interaction.reply(`Working on ${name}-ing your image, job: ${jobid}`)
-			// get image data
-			const image = interaction.options.getAttachment("image")
-			
-			// download image to file
-			await download(image.proxyURL, `${jobid}-input.png`)
+const createCommand = (name, description, fn, data_manipulator) => {
+	const command = {}
+
+	// boilerplate command data
+	command.data = new SlashCommandBuilder()
+		.setName(name)
+		.setDescription(description)
+		.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+		.addAttachmentOption(option => option
+			.setName("image")
+			.setDescription("The image to manipulate")
+			.setRequired(true)
+		)
+
+	// this allows the `createCommand` function to mutate the command data, an example
+	// would be for the sake of adding more arguments (which can be seen in the unfinished caption command)
+	if (data_manipulator)
+		data_manipulator(command.data)
+	
+	command.execute = async interaction => {
+		// tell the user 
+		await interaction.reply(`Working on ${name}-ing your image`)
+
+		// get image data
+		const image = interaction.options.getAttachment("image")
 		
-			// do the image manipulation here and write to output file
-			await (await fn(await sharp(`./jobs/${jobid}-input.png`), jobid)).png().toFile(`./jobs/${jobid}.png`)
+		// download image to memory
+		const filedata = await download(image.proxyURL)
+		
+		// turn the image into a sharp object and pass it to our command function for manipulation
+		const result = await fn(sharp(filedata), interaction)
 
-			// turn the file into an attachment so it can be sent in the embed
-			const file = new AttachmentBuilder(`./jobs/${jobid}.png`)
+		// turn our result from the function into a buffer, then turn that buffer into an attachment which we can send back to the user on discord
+		const attachment = new AttachmentBuilder(await result.png().toBuffer())
 
-			// reply to the interaction with the information and the image
-			await interaction.editReply({embeds: [
-				new EmbedBuilder()
-					.setColor(0xc7a8ff)
-					.addFields(
-						{ name: 'Job ID:', value: jobid },
-						{ name: 'Created by', value: interaction.user.username },
-					)
-					.setImage(`attachment://${jobid}.png`)
-					.setTimestamp()
-			], files: [file]})
-			
-			// cleanup files
-			fs.unlinkSync(`./jobs/${jobid}.png`)
-			fs.unlinkSync(`./jobs/${jobid}-input.png`)
-		}
-	})
+		// reply to the interaction with the information and the image
+		await interaction.editReply({embeds: [
+			new EmbedBuilder()
+				.setColor(0xc7a8ff)
+				.addFields(
+					{ name: 'Created by', value: interaction.user.username },
+					{ name: 'Time took', value: `${Math.abs(Date.now() - interaction.createdTimestamp) / 1000}s` }
+				)
+				.setImage(`attachment://image.png`)
+				.setTimestamp()
+		], files: [attachment]})
+		
+	}
+	command_list.push(command)
 }
 
-createCommand("center", "Centers an image", async (image, jobid) => {
+createCommand("center", "Centers an image", async image => {
 	const image_data = await getImageData(image)
 	const {width, height} = image_data.info
 	
@@ -114,9 +111,9 @@ createCommand("center", "Centers an image", async (image, jobid) => {
 	})
 })
 
-createCommand("greyscale", "Removes the color from an image", async (image, jobid) => {
-	return await image.greyscale()
 })
+
+createCommand("greyscale", "Removes the color from an image", async image => image.greyscale())
 
 const command_json = []
 
