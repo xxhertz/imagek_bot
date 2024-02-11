@@ -31,7 +31,7 @@ const getPixel = (image_buffer, x, y) => {
 	const {width, channels} = image_buffer.info
 	const x_offset = y * width * channels 
 	const start_position = x * channels + x_offset
-	return image_buffer.data.slice(start_position, start_position + channels)
+	return image_buffer.data.subarray(start_position, start_position + channels)
 }
 
 // Require the necessary discord.js classes
