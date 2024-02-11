@@ -5,6 +5,11 @@ const request = require("request")
 const sharp = require("sharp")
 
 
+/**
+ * Promisified version of request.get
+ * @param {String} url 
+ * @returns {Promise<Buffer>} Response
+ */
 const download = async url => {
 	return new Promise((resolve, reject) => {
 		request({url, encoding: null}, (error, response, body) => {
@@ -16,8 +21,20 @@ const download = async url => {
 	})
 }
 
+/**
+ * Shorthandedly returns an image as a raw buffer, with 
+ * @param {sharp.Sharp} image 
+ * @returns {Promise<{ data: Buffer; info: OutputInfo }>}
+ */
 const getImageData = async image => await image.raw().toBuffer({resolveWithObject: true})
 
+/**
+ * Gets the color of a pixel from a buffer
+ * @param {{ data: Buffer; info: sharp.OutputInfo }} image_buffer 
+ * @param {Number} x 
+ * @param {Number} y 
+ * @returns {sharp.RGBA}
+ */
 const getPixel = (image_buffer, x, y) => {
 	const {width, channels} = image_buffer.info
 	const x_offset = y * width * channels 
@@ -25,15 +42,41 @@ const getPixel = (image_buffer, x, y) => {
 	return image_buffer.data.subarray(start_position, start_position + channels)
 }
 
-// Require the necessary discord.js classes
-const { Client, Events, GatewayIntentBits, SlashCommandBuilder, REST, Collection, Routes, EmbedBuilder, PermissionFlagsBits, AttachmentBuilder } = require('discord.js')
-
+// require the necessary discord.js classes (mostly boilerplate)
+const { Client, Events, GatewayIntentBits, SlashCommandBuilder, REST, Collection, Routes, EmbedBuilder, PermissionFlagsBits, AttachmentBuilder, CommandInteraction, CommandInteractionOptionResolver } = require('discord.js')
 
 // Create a new client instance
 const client = new Client({ intents: [GatewayIntentBits.Guilds] })
 client.commands = new Collection()
 
 const command_list = []
+
+// some JSDoc stuff i wrote for autocomplete and intellisense (extremely handy if you dont want to open documentation every 3 seconds if you're not familiar with sharp)
+/**
+ * @typedef {object} ResolverInOptions
+ * @property {CommandInteractionOptionResolver} options
+ * no idea why this isn't built in?
+ * @typedef {CommandInteraction & ResolverInOptions} CommandInteractionWithOptionResolver
+ */
+
+/**
+ * @callback ImageManipulator
+ * @param {sharp.Sharp} image
+ * @param {CommandInteractionWithOptionResolver} interaction
+ */
+
+/**
+ * @callback DataManipulator
+ * @param {SlashCommandBuilder} command_builder
+ */
+
+/**
+ * This is the main function which is used. To prevent extremely repetitive code, this function runs all of the boilerplate code, and then passes a Sharp object to the function `fn`, and then replies to the interaction with the result.
+ * @param {String} name The name of the command which users will type
+ * @param {String} description The description of the command which users will see
+ * @param {ImageManipulator} fn The image manipulation function
+ * @param {DataManipulator} data_manipulator An optional function which allows you to modify the SlashCommandBuilder, to potentially add more arguments for example.
+ */
 const createCommand = (name, description, fn, data_manipulator) => {
 	const command = {}
 
@@ -53,6 +96,9 @@ const createCommand = (name, description, fn, data_manipulator) => {
 	if (data_manipulator)
 		data_manipulator(command.data)
 	
+	/**
+	 * @param {CommandInteractionWithOptionResolver} interaction 
+	 */
 	command.execute = async interaction => {
 		// tell the user 
 		await interaction.reply(`Working on ${name}-ing your image`)
