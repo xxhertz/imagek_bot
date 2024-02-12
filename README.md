@@ -24,7 +24,11 @@ module.exports = createCommand(command_name, description, fn, data_manipulator?)
 // data_manipulator (OPTIONAL): The function which can manipulate the information the command contains, such as any extra arguments in your command
 ```
 
+Example:
 ```js
-createCommand("greyscale", "Turns an image greyscale", image => image.greyscale())
+// commands/greyscale.js
+const createCommand = require("../createCommand")
+
+module.exports = createCommand("greyscale", "Turns an image greyscale", image => image.greyscale())
 ```
-For an example containing a data_manipulator, see [the caption command](commands/caption.js)
+For an example containing a data_manipulator, see [caption.js](commands/caption.js) or [resize.js](commands/resize.js)
