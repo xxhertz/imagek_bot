@@ -35,7 +35,7 @@ module.exports = createCommand("centertwitter", "Centers and trims an image and 
 	const even_check = height_diff % 2
 	const even_check_2 = width_diff % 2
 
-	return await post_trim.extend({
+	return post_trim.extend({
 		top: (height_diff - even_check) / 2,
 		bottom: (height_diff + even_check) / 2,
 		
