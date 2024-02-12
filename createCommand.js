@@ -63,6 +63,10 @@ const createCommand = (name, description, fn, data_manipulator) => {
 		// turn the image into a sharp object and pass it to our command function for manipulation
 		const result = await fn(sharp(filedata), interaction)
 
+		// sometimes our command may not want to reply, or reply on its own. see ./commands/twitterextend.js for an example
+		if (!result || !result.png || typeof result.png !== "function")
+			return
+
 		// turn our result from the function into a buffer, then turn that buffer into an attachment which we can send back to the user on discord
 		const attachment = new AttachmentBuilder(await result.png().toBuffer())
 
