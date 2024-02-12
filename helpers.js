@@ -1,4 +1,5 @@
 const request = require("request")
+const {APIApplicationCommandOptionChoice} = require("discord.js")
 const sharp = require("sharp")
 /**
  * Promisified version of request.get
@@ -37,4 +38,11 @@ const getPixel = (image_buffer, x, y) => {
 	return image_buffer.data.subarray(start_position, start_position + channels)
 }
 
-module.exports = {download, getImageData, getPixel}
+/**
+ * Turns a string into a choice object for `ApplicationCommandOption.addChoices`
+ * @param {String} str 
+ * @returns {APIApplicationCommandOptionChoice<string>}
+ */
+const genChoice = str => ({name: str, value: str})
+
+module.exports = {download, getImageData, getPixel, genChoice}
