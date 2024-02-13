@@ -5,7 +5,7 @@
 # How do I get started?
 1. Clone the repository
 2. Run `npm i --save-dev` in a terminal in the directory
-3. Put [your discord application](https://discord.com/developers/applications)'s `token` & `clientId` inside the `token.json` file
+3. Create a file called `.env` and put [your discord application](https://discord.com/developers/applications)'s `token` & `clientId` inside
 4. Run `node .` in your terminal
 5. Done!
 

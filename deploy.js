@@ -1,5 +1,6 @@
 // 99% of this file is discord boilerplate
-const {token, clientId} = require("./token.json")
+require("dotenv").config()
+const {token, clientId} = process.env
 const { Client, Events, GatewayIntentBits, REST, Collection, Routes } = require('discord.js')
 const rest = new REST().setToken(token);
 
