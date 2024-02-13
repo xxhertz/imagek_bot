@@ -31,4 +31,4 @@ const createCommand = require("../createCommand")
 
 module.exports = createCommand("greyscale", "Turns an image greyscale", image => image.greyscale())
 ```
-For an example containing a data_manipulator, see [caption.js](commands/caption.js) or [resize.js](commands/resize.js)
+For an example containing a `data_manipulator` function, see [caption.js](commands/caption.js) or [resize.js](commands/resize.js)
