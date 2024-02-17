@@ -1,11 +1,23 @@
 // 99% of this file is discord boilerplate
 require("dotenv").config()
 const {token, clientId} = process.env
-const { Client, Events, GatewayIntentBits, REST, Collection, Routes } = require('discord.js')
+const { Client, Events, GatewayIntentBits, REST, Collection, Routes, SlashCommandBuilder, Interaction } = require('discord.js')
 const rest = new REST().setToken(token);
+
+/**
+ * @typedef command
+ * @type {{data:SlashCommandBuilder, execute:function(Interaction)}} 
+ *
+ * @typedef {Client & {commands: Collection<string, command>}} ClientWithCommands
+ * 
+ * @typedef {Interaction & {client: ClientWithCommands}} InteractionWithClient
+ *
+ * @param {command[]} command_list 
+ */
 
 module.exports = command_list => {
 	// Create a new client instance
+	/** @type {ClientWithCommands} */
 	const client = new Client({ intents: [GatewayIntentBits.Guilds] })
 	client.commands = new Collection()
 
@@ -15,23 +27,17 @@ module.exports = command_list => {
 		command_json.push(command.data.toJSON())
 	}
 
-	// and deploy your commands!
-	(async () => {
-		try {
-			console.log(`Started refreshing ${command_json.length} application (/) commands.`)
-			const data = await rest.put(Routes.applicationCommands(clientId), { body: command_json })
-			console.log(`Successfully reloaded ${data.length} application (/) commands.`)
-		} catch (error) {
-			console.error(error)
-		}
-	})()
+	console.log(`Started refreshing ${command_json.length} application (/) commands.`)
+	rest.put(Routes.applicationCommands(clientId), { body: command_json }).then(data => {
+		console.log(`Successfully reloaded ${data.length} application (/) commands.`)
+	})
 
+	client.once(Events.ClientReady, c => console.log(`Ready! Logged in as ${c.user.tag}`))
 
-	client.once(Events.ClientReady, c =>
-		console.log(`Ready! Logged in as ${c.user.tag}`)
-	)
+	client.on(Events.InteractionCreate, _interaction => {
+		/** type-wrapped interaction for intellisense @type {InteractionWithClient} interaction */
+		const interaction = _interaction
 
-	client.on(Events.InteractionCreate, async interaction => {
 		if (!interaction.isChatInputCommand()) return
 
 		const command = interaction.client.commands.get(interaction.commandName)
@@ -41,16 +47,13 @@ module.exports = command_list => {
 			return
 		}
 
-		try {
-			await command.execute(interaction)
-		} catch (error) {
+		command.execute(interaction).catch(error => {
 			console.error(error)
-			if (interaction.replied || interaction.deferred) {
-				await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true })
-			} else {
-				await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true })
-			}
-		}
+			if (interaction.replied || interaction.deferred)
+				return interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true })
+
+			return interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true })
+		})
 	})
 
 
