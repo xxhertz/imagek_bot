@@ -17,10 +17,10 @@
 
 Usage:
 ```js
-module.exports = createCommand(command_name, description, fn, data_manipulator?)
+module.exports = createCommand(command_name, description, image_manipulator, data_manipulator?)
 // command_name: The name of the command. This is what the user will see & type
 // description: The text the user sees after typing the name of your command
-// fn: The function which the image and interaction is passed to
+// image_manipulator: The function which the image and interaction is passed to
 // data_manipulator (OPTIONAL): The function which can manipulate the information the command contains, such as any extra arguments in your command
 ```
 
